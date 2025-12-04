@@ -4,7 +4,9 @@
 #include <stdbool.h>
 
 #include "main.h"
-
+#include "fileio.h"
+#include "parser.h"
+#include <svec.h>
 
 static void masm_main_print_help_message() {
     for (int i = 0; i <  HELP_MESSAGE_SIZE; i++) {
@@ -76,10 +78,14 @@ int main (int args, char** argv) {
         exit(1);
     }
 
-    printf("Input File: %s\n", param.inFileNames);
-    printf("Output File: %s\n", param.outFileName);
+    // Reads the file to a char buffer
+    char* buffer = masm_fiolio_read_file_to_buffer(param.inFileNames);
+    // The file couldn't be found 
+    if (buffer == NULL) {
+        exit(1);
+    }
 
-
-    
-    
+    // Parsing 
+    masm_parser_split_lines(buffer);
+    return 0;
 }

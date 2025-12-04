@@ -1,8 +1,6 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#define CLEAN 0
-#define ERROR 1
 
 typedef struct {
     char* outFileName; 
