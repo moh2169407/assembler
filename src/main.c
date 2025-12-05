@@ -5,8 +5,8 @@
 
 #include "main.h"
 #include "fileio.h"
-#include "parser.h"
-#include <svec.h>
+#include "lexer.h"
+#include "svec.h"
 
 static void masm_main_print_help_message() {
     for (int i = 0; i <  HELP_MESSAGE_SIZE; i++) {
@@ -86,6 +86,6 @@ int main (int args, char** argv) {
     }
 
     // Parsing 
-    masm_parser_split_lines(buffer);
+    masm_lexer_tokenize(buffer);
     return 0;
 }
