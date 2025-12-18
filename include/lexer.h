@@ -14,24 +14,29 @@ typedef enum {
     TOKEN_TYPE_COMMA,
     TOKEN_TYPE_STRING,
     TOKEN_TYPE_UNKNOWN,
+    TOKEN_TYPE_DATA_DIRECTIVE,
+    TOKEN_TYPE_INVALID,
 } TokenType;
-
 
 typedef struct {
     TokenType type;
     char* value;
+    int lineNum;
+    int cursorPos;
 } Token;
 
 typedef struct {
     Token* tok;
     int size;
     int totalSize;
+    int current;
 } TokenArr;
 
 typedef struct {
-    TokenArr* arr;
+    TokenArr** arr;
     int size;
     int capcity;
+    int current;
 } TokenMatrix;
 
 typedef struct {
@@ -69,15 +74,17 @@ char* masm_lexer_get_new_line(char* buffer, char* delimiter);
 
 // Main method that takes a buffer, file written to memory,
 // and returns the tokenized version, handles error
-TokenArr* masm_lexer_tokenize(char* buffer);
+TokenMatrix* masm_lexer_tokenize(char* buffer);
 
 // Takes a slices line from buffer and then slices it more
 // into tokens 
-bool masm_lexer_slice_line(char* current, TokenArr* arr);
+bool masm_lexer_slice_line(char* current, TokenMatrix* matrix);
 
 // Create a new token
 Token masm_lexer_init_token(char* name, TokenType type);
 
+// Adds the column number and line number data to token
+void masm_lexer_add_token_metadata(Token* tok, int line, int columnNum);
 
 // Creates a array containing tokens
 // need to freed, calling the corresponding free method
@@ -100,7 +107,14 @@ void masm_lexer_free_token_matrix(TokenMatrix* matrix);
 
 // Appends a new token array to the ends
 // reallocates new memory if needed
-void masm_lexer_append_token_matrix(TokenMatrix* matrix, TokenArr arr);
+void masm_lexer_append_token_matrix(TokenMatrix* matrix, TokenArr* arr);
+
+
+void masm_lexer_matrix_print_formatted_tokens(TokenMatrix* matrix);
+
+TokenArr* masm_lexer_get_next_token_arr(TokenMatrix* matrix);
+
+Token* masm_lexer_get_next_token(TokenArr* arr);
 
 // Checks to see if the current token is a identifier meaning
 // starts with A-Z or a-z or _

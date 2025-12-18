@@ -1,12 +1,15 @@
 #ifndef MAIN_H
 #define MAIN_H
 
+#include <stdbool.h>
+
 typedef struct {
     char* outFileName; 
     // TODO 
     // Going to make this a char** and takes a list of inputs files
     char* inFileNames;
     int InFileNums;
+    bool printTokens;
 } InitParam;
 
 

@@ -8,6 +8,7 @@
 #include "lexer.h"
 #include "svec.h"
 #include "log.h"
+#include "parser.h"
 
 // TODO
 // #include "diagnostic.h"
@@ -28,9 +29,11 @@ static int masm_main_parse_arugments(int args, char** argv, InitParam* param) {
     }
     // Iterates through the arguments
     for (int i = 1; i < args; i++) {
-        // Checks to see if the first char is '-'
         if (argv[i][0] == '-') {
-            if (strcmp("-o", argv[i]) == 0) {
+            if (strcmp("-T", argv[i]) == 0) {
+                param->printTokens = !param->printTokens;
+            }
+            else if (strcmp("-o", argv[i]) == 0) {
                 // Checks to see if the next element is within the bounds
                 // -o expects an output file name
                 // rewrites name if multiple are passed, last argument is saved
@@ -87,13 +90,24 @@ int main (int args, char** argv) {
     }
 
     // Reads the file to a char buffer
-    char* buffer = masm_fiolio_read_file_to_buffer(param.inFileNames);
+    char* buffer = masm_fileio_read_file_to_buffer(param.inFileNames);
     // The file couldn't be found 
     if (buffer == NULL) {
         return 1;
     }
 
     // Parsing 
-    masm_lexer_tokenize(buffer);
+    TokenMatrix* matrix = masm_lexer_tokenize(buffer);
+    if (errorCount > 0) {
+        printf("Errors found [lexer]: %d\n", errorCount);
+    }
+
+    if (param.printTokens) {
+        masm_lexer_matrix_print_formatted_tokens(matrix);
+    }
+
+    masm_parser_analyze(matrix);
+
+
     return 0;
 }

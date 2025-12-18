@@ -6,6 +6,6 @@
 
 FILE* masm_fileio_get_file(char* inputFileName);
 
-char* masm_fiolio_read_file_to_buffer(char* fileName);
+char* masm_fileio_read_file_to_buffer(char* fileName);
 
 #endif

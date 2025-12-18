@@ -19,6 +19,12 @@ static char* _hex_to_cint(char** current, Token* token);
 static char* _bin_to_cint(char** current, Token* token);
 
 
+static bool _is_extra_whitespace_tab(char* current, char* previous) {
+    if (*current == ' ' && (previous == NULL || (previous != NULL && *previous == ' ')) || *current == '\t') {
+        return true;
+    }
+    return false;
+}
 
 char* _token_type_to_string(TokenType type) {
     switch (type) {
@@ -52,7 +58,11 @@ char* _token_type_to_string(TokenType type) {
         case TOKEN_TYPE_UNKNOWN: {
             return "TOKEN_TYPE_UNKNOWN";
         }
-    }
+        case TOKEN_TYPE_DATA_DIRECTIVE:
+            return "TOKEN_TYPE_DATA_DIRECTIVE";
+        case TOKEN_TYPE_INVALID:
+            return "TOKEN_TYPE_INVALID";
+        }
 }
 
 // ---------------------------------------------------
@@ -103,39 +113,41 @@ char* masm_lexer_get_new_line(char* buffer, char* delimiter) {
     return strtok(buffer, delimiter);
 }
 
-
-TokenArr* masm_lexer_tokenize(char* buffer) {
+TokenMatrix* masm_lexer_tokenize(char* buffer) {
     // Iterates through the file line by line
     char* current = masm_lexer_get_new_line(buffer, "\n");
-    TokenArr* tokenArr = masm_lexer_init_token_arr();
+    TokenMatrix* matrix = masm_lexer_init_token_matrix();
     // Cycles through until it reaches the '\0
     while (current != NULL) {
 
-        masm_lexer_slice_line(current, tokenArr);
+        masm_lexer_slice_line(current, matrix);
 
         // Goes to the next line
         current = masm_lexer_get_new_line(NULL, "\n");
     }
 
     // return matrix;
-    return tokenArr;
+    return matrix;
 }
 
-bool masm_lexer_slice_line(char* line, TokenArr* arr) {
+bool masm_lexer_slice_line(char* line, TokenMatrix* matrix) {
     // Copies the pointer at the beginning of the line
     char* current = line;
     // Tracks previous current value
-    char *previous = NULL;
+    char *previous = line;
+    // Tracks the cursor position 
+    char* pos = current;
 
-    TokenArr* tokenArr = masm_lexer_init_token_arr();
+    TokenArr* arr = masm_lexer_init_token_arr();
 
     // Iterates through the entire line until null term is reached
     while (*current) {
         // checks to see if there's consecutively whitespaces
         // and tabs to skips over
-        if (*current == ' ' && (previous == NULL || (previous != NULL && *previous == ' ')) || *current == '\t'){
+        if (_is_extra_whitespace_tab(current, previous)){
             previous = current;
             current++;
+            pos++;
             continue;
         }
         // ';' are comments
@@ -144,41 +156,39 @@ bool masm_lexer_slice_line(char* line, TokenArr* arr) {
         }
 
         Token tok;
+        tok.lineNum = matrix->size + 1;
 
-        if (masm_lexer_is_directive(&current, &tok)) {
-            masm_lexer_append_token_arr(arr, &tok);
-        }
-        else if (masm_lexer_is_identifier(&current, &tok)) {
-            masm_lexer_append_token_arr(arr, &tok);
-        }
-        else if (masm_lexer_is_register(&current, &tok)) {
-            masm_lexer_append_token_arr(arr, &tok);
-        }
-        else if (masm_lexer_is_number_literal(&current, &tok)) {
-            masm_lexer_append_token_arr(arr, &tok);
-        }
-        else if (masm_lexer_is_comma(&current, &tok)) {
-            masm_lexer_append_token_arr(arr, &tok);
-        }
-        else if (masm_lexer_is_string_literal(&current, &tok)) {
-            masm_lexer_append_token_arr(arr, &tok);
-        }
-        // Unknown character
-        else {
+        if (!masm_lexer_is_directive(&current, &tok) &&
+            !masm_lexer_is_identifier(&current, &tok) && 
+            !masm_lexer_is_register(&current, &tok) && 
+            !masm_lexer_is_number_literal(&current, &tok) &&
+            !masm_lexer_is_comma(&current, &tok) &&
+            !masm_lexer_is_string_literal(&current, &tok)) 
+        {
+            log_error("unknown char: %c\n", *current);
+            errorCount++;
+
             // Turning the char in null term string
             char buf[2] = { *current, '\0' };
 
-            tok.type = TOKEN_TYPE_UNKNOWN; 
-            tok.value = strdup(buf);
+            tok = masm_lexer_init_token(strdup(buf), TOKEN_TYPE_UNKNOWN);
 
-            masm_lexer_append_token_arr(arr, &tok);
             current++;
         }
+        // Calculates the cursor position
+        int columnNum = pos - line; 
+        masm_lexer_add_token_metadata(&tok, matrix->size + 1, columnNum + 1);
+
+        masm_lexer_append_token_arr(arr, &tok);
         previous = current;
+        pos = current;
     }
     // Appends the End of Line token to the array
     Token tok = masm_lexer_init_token(NULL, TOKEN_TYPE_EOL);
+    masm_lexer_add_token_metadata(&tok, matrix->size + 1, current - line);
     masm_lexer_append_token_arr(arr, &tok);
+
+    masm_lexer_append_token_matrix(matrix, arr);
 
     return true;
 }
@@ -188,6 +198,11 @@ Token masm_lexer_init_token(char* name, TokenType type) {
         .value = name,
         .type = type,
     };
+}
+
+void masm_lexer_add_token_metadata(Token* tok, int line, int columnNum) {
+    tok->lineNum = line;
+    tok->cursorPos = columnNum;
 }
 
 TokenArr* masm_lexer_init_token_arr() {
@@ -213,6 +228,7 @@ void masm_lexer_append_token_arr(TokenArr* arr, Token* token) {
 TokenMatrix* masm_lexer_init_token_matrix() {
     TokenMatrix* matrix = xmalloc(sizeof(*matrix));
     matrix->capcity = 5;
+    matrix->current = 0;
     matrix->arr = xmalloc(sizeof(*matrix->arr) * matrix->capcity);
     matrix->size = 0;
     return matrix;
@@ -220,8 +236,31 @@ TokenMatrix* masm_lexer_init_token_matrix() {
 
 void masm_lexer_free_token_matrix(TokenMatrix* matrix) {
     for (int i = 0; i < matrix->size; i++) {
-        
+        masm_lexer_free_token_arr(matrix->arr[i]);
     }
+    free(matrix);
+}
+
+void masm_lexer_append_token_matrix(TokenMatrix* matrix, TokenArr* arr) {
+    if (matrix->size >= matrix->capcity) {
+        matrix->capcity += 5;
+        matrix->arr = xrealloc(matrix->arr, sizeof(*matrix->arr) * matrix->capcity);
+    }
+    matrix->arr[matrix->size++] = arr;
+}
+
+void masm_lexer_matrix_print_formatted_tokens(TokenMatrix* matrix) {
+    for (int i = 0; i < matrix->size; i++) {
+        for (int j = 0; j < matrix->arr[i]->size; j++) {
+            Token tok = matrix->arr[i]->tok[j];
+            if (tok.type == TOKEN_TYPE_EOL) {
+                printf("[%d:%d]  %s\n", tok.lineNum, tok.cursorPos, _token_type_to_string(tok.type));
+            }
+            else {
+                printf("[%d:%d]  %s : %s\n", tok.lineNum, tok.cursorPos, _token_type_to_string(tok.type), tok.value);
+            }
+        }
+    } 
 }
 
 
@@ -269,12 +308,12 @@ bool masm_lexer_is_directive(char** current, Token* token) {
 
     while (*p) {
         if (*p == ':') {
-            type = TOKEN_TYPE_LABEL;
+            type = TOKEN_TYPE_DIRECTIVE;
             p++;
             break; 
         }
         if (!isalpha(*p)) {
-            type = TOKEN_TYPE_DIRECTIVE;
+            type = TOKEN_TYPE_DATA_DIRECTIVE;
             break;            
         }
         masm_lexer_append_string_builder(&strB, *p);
@@ -361,6 +400,20 @@ bool masm_lexer_is_number_literal(char** current, Token *token) {
 
 }
 
+TokenArr* masm_lexer_get_next_token_arr(TokenMatrix* matrix) {
+    if (matrix->current <= matrix->size) {
+        return matrix->arr[matrix->current++];
+    }
+    return NULL;
+}
+
+Token* masm_lexer_get_next_token(TokenArr* arr) {
+    if (arr->current <= arr->size) {
+        return &arr->tok[arr->current++];
+    }
+    return NULL;
+}
+
 bool masm_lexer_is_comma(char** current, Token* token) {
     char* p = *current;
     if (*p != ',') {
@@ -396,14 +449,15 @@ bool masm_lexer_is_string_literal(char** current, Token* token) {
     }
     
     char* name = masm_lexer_to_string_string_builder(&strB);
-    *token = masm_lexer_init_token(name, TOKEN_TYPE_STRING);
+    *token = masm_lexer_init_token(name, closed ? TOKEN_TYPE_STRING : TOKEN_TYPE_INVALID);
     if (closed) {
         p++;
         *current = p;
     }
     else {
-        log_error("%s\n", "masm: error: open string\n");
+        errorCount++;
+        *current = p;
+        log_error("%s\n", "open string\n");
     }
     return true;
 }
-
