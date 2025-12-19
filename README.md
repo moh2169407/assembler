@@ -12,11 +12,12 @@ or CMake
 
 
 # Video 
-Program generates a binary output file, if not outfile name is pass, a.out is assumed and will be override if exist
+Program generates a binary output file, if no outfile name is passed, a.out is assumed and will be overwritten if exists
+
 https://github.com/user-attachments/assets/bbb3b8f6-e781-425c-a631-d0b193589a04
 
 
-
+Print nicely format represention instead of directing to file
 https://github.com/user-attachments/assets/40e4eefe-303d-4801-94b0-86c98c191473
 
 
