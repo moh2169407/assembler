@@ -1,0 +1,5 @@
+# Capstone Assembler Project
+
+## Date: Dec 19, 2025
+
+#Description: This project is an academic school project to teach us about different programming paradigms. 
