@@ -17,10 +17,10 @@ Program generates a binary output file, if no outfile name is passed, a.out is a
 https://github.com/user-attachments/assets/bbb3b8f6-e781-425c-a631-d0b193589a04
 
 
-Print nicely format represention instead of directing to file
+Print format representation nicely instead of directing to file
 https://github.com/user-attachments/assets/40e4eefe-303d-4801-94b0-86c98c191473
 
-
+Taking a binary file generated from a program and calling xxd, a binary formator
 https://github.com/user-attachments/assets/bc740413-6949-4b94-baa5-8837472037e0
 
 
