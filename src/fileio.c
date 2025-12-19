@@ -11,7 +11,7 @@ FILE* masm_fileio_get_file(char* inputFileName) {
 }
 
 
-char* masm_fiolio_read_file_to_buffer(char* fileName)  {
+char* masm_fileio_read_file_to_buffer(char* fileName)  {
     FILE* file = masm_fileio_get_file(fileName);
     // Checks if the file is found
     if (file == NULL) {

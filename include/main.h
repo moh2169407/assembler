@@ -10,6 +10,7 @@ typedef struct {
     char* inFileNames;
     int InFileNums;
     bool printTokens;
+    bool printOutput;
 } InitParam;
 
 

@@ -144,14 +144,14 @@ bool masm_lexer_slice_line(char* line, TokenMatrix* matrix) {
     while (*current) {
         // checks to see if there's consecutively whitespaces
         // and tabs to skips over
-        if (_is_extra_whitespace_tab(current, previous)){
+        if (_is_extra_whitespace_tab(current, previous) ){
             previous = current;
             current++;
             pos++;
             continue;
         }
         // ';' are comments
-        if (*current == ';') {
+        if (*current == ';' || *current == '\n') {
             break;
         }
 
@@ -274,6 +274,7 @@ bool masm_lexer_is_identifier(char** current, Token* token) {
     
     // Creates a string builder with a default size of 10
     StringBuilder strB = masm_lexer_init_string_builder(10);
+    type = TOKEN_TYPE_IDENTIF;
     while (*p) {
         if (*p == ':') {
             type = TOKEN_TYPE_LABEL;
@@ -281,7 +282,6 @@ bool masm_lexer_is_identifier(char** current, Token* token) {
             break; 
         }
         if (!isalpha(*p) && *p != '_') {
-            type = TOKEN_TYPE_IDENTIF;
             break;
         }
         masm_lexer_append_string_builder(&strB, *p);

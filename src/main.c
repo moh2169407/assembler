@@ -12,6 +12,16 @@
 
 // TODO
 // #include "diagnostic.h"
+//
+//
+
+typedef struct {
+    int binary; // funct code
+    int rd;
+    int rs;
+    int rt;
+    int shamt;
+} RTypeInstr;
 
 static void masm_main_print_help_message() {
     for (int i = 0; i <  HELP_MESSAGE_SIZE; i++) {
@@ -19,10 +29,22 @@ static void masm_main_print_help_message() {
     }
 }
 
+static uint32_t encode_rtype(const InstructionInstance* instr) {
+    if (instr->operandCount < 3) return 0;
+
+    uint32_t opcode = instr->def->binary & 0xFF;
+    uint32_t rs = instr->operands[1].value & 0x1F;
+    uint32_t rt = instr->operands[2].value & 0x1F;
+    uint32_t rd = instr->operands[0].value & 0x1F;
+
+
+    return (opcode << 24) | (rs << 16) | (rt << 8) | rd;
+}
+
 static int masm_main_parse_arugments(int args, char** argv, InitParam* param) {
     // If not arguments are passed
     if (args == 1) {
-        log_error("no arguments passed\n");
+        log_error("no arguments passed");
         // Event event = EARLY_ERROR("masm: error: no inputs files\n"); 
         // masm_diagnostic_append_diagnos(event);
         return ERROR;
@@ -33,6 +55,9 @@ static int masm_main_parse_arugments(int args, char** argv, InitParam* param) {
             if (strcmp("-T", argv[i]) == 0) {
                 param->printTokens = !param->printTokens;
             }
+            else if (strcmp("-P", argv[i]) == 0) {
+                param->printOutput = !param->printTokens;
+            }
             else if (strcmp("-o", argv[i]) == 0) {
                 // Checks to see if the next element is within the bounds
                 // -o expects an output file name
@@ -42,7 +67,7 @@ static int masm_main_parse_arugments(int args, char** argv, InitParam* param) {
                     i++;
                 }
                 else {
-                    log_error("\"-o\" takes parameter\n");
+                    log_error("\"-o\" takes parameter");
                     // Event event = EARLY_ERROR("masm: error: \"-o\" takes parameters\n");
                     // masm_diagnostic_append_diagnos(event);
                     return ERROR;
@@ -82,6 +107,45 @@ static int masm_main_parse_arugments(int args, char** argv, InitParam* param) {
     return CLEAN;
 }
 
+void masm_codegen_print_binary(AsmContext* context, InitParam param) {
+    FILE* out = stdout;
+
+    if (!param.printOutput) {
+        out = fopen(param.outFileName, "wb");
+        if (!out) {
+            perror("masm: failed to open output file");
+            return;
+        }
+    }
+    IRNode* node = context->head;
+    while (node) {
+        if (node->type == IRNODE_INSTRUCTION) {
+            // Human-readable output (debug)
+            if (param.printOutput) {
+                fprintf(out, "Opcode: %d | Operands:",
+                        node->instance.def->binary);
+
+                for (int i = 0; i < node->instance.operandCount; i++) {
+                    fprintf(out, " %d", node->instance.operands[i].value);
+                }
+
+                uint32_t binaryWord = encode_rtype(&node->instance);
+                fprintf(out, " | Encoded: 0x%08X\n", binaryWord);
+            }
+            else {
+                uint32_t binaryWord = encode_rtype(&node->instance);
+                fwrite(&binaryWord, sizeof(uint32_t), 1, out);
+            }
+        }
+
+        node = node->next;
+    }
+
+    if (out != stdout) {
+        fclose(out);
+    }
+}
+
 int main (int args, char** argv) {
     InitParam param = {0};
     // Parses the command line arguments
@@ -106,7 +170,12 @@ int main (int args, char** argv) {
         masm_lexer_matrix_print_formatted_tokens(matrix);
     }
 
-    masm_parser_analyze(matrix);
+    AsmContext* content =    masm_parser_analyze(matrix);
+
+    if ((!errorCount) > 0) {
+        masm_codegen_print_binary(content, param);
+    }
+
 
 
     return 0;

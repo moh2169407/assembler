@@ -25,6 +25,8 @@
 
 #define MAX_CALLBACKS 32
 
+int errorCount = 0;
+
 typedef struct {
   log_LogFn fn;
   void *udata;
