@@ -2,7 +2,9 @@
 
 **Date:** Dec 19, 2025
 
-## Description: This project is an academic school project to teach us about different programming paradigms.
+## Description: 
+This project is an academic school project to teach us about different programming paradigms. The project is not done and currently has TODO. Changes I have made seen presenting was bug fixes and a more easy presentable display of the project. With more time, I would've like to full fledged assembler with more robust features but this is what I got to, I instead learned about the process.
+
 
 ---
 
