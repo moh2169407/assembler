@@ -12,7 +12,7 @@ or CMake
 
 
 # Video 
-
+Program generates a binary output file, if not outfile name is pass, a.out is assumed and will be override if exist
 https://github.com/user-attachments/assets/bbb3b8f6-e781-425c-a631-d0b193589a04
 
 
