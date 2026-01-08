@@ -14,12 +14,11 @@ const char* RESET = "\033[0m";
 const char* RED  = "\033[31m";
 const char* GREEN  = "\033[32m";
 const char* GOLDEN = "\033[38;5;214m";
-
+const char* BLUE  = "\033[34m";
 
 const char* ITALIC = "\033[3m"; 
 const char* BOLD = "\033[1m";
 const char* UNDERLINE = "\033[4:3m";
-
 
 struct header {
     int lineNum;
@@ -32,15 +31,14 @@ struct header {
 
 struct body {
     char* line;
-    char* suggestion;
+    char* note;
     char* token;
-    FormatType formatType;
+    BodyType type;
 };
 
-
-// TODO
 struct footer {
-
+    char* suggestion;
+    FooterType type;
 };
 
 struct message {
@@ -57,7 +55,6 @@ struct diagnostics{
     bool canEmit;
 };
 
-
 // global diagnostics 
 Diagnostics diag = {
     .next = NULL,
@@ -65,7 +62,6 @@ Diagnostics diag = {
     .panic = false,
     .canEmit = true,
 };
-
 
 static char* _get_error_type(ErrorType type) {
     switch (type) {
@@ -122,12 +118,12 @@ void masm_diagnostics_free_header(Header* header) {
 }
 
 
-Body* masm_diagnostics_init_body(char* line, char* suggestion, char* token, FormatType formatType) {
+Body* masm_diagnostics_init_body(char* line, char* note, char* token, BodyType formatType) {
     Body* body = xmalloc(sizeof(*body));
     body->line = strdup(line);
-    body->suggestion = suggestion ? strdup(suggestion) : NULL;
+    body->note = note ? strdup(note) : NULL;;
     body->token = strdup(token);
-    body->formatType = formatType;
+    body->type = formatType;
 
     return body;
 }
@@ -135,12 +131,25 @@ Body* masm_diagnostics_init_body(char* line, char* suggestion, char* token, Form
 void masm_diagnostics_free_body(Body* body) {
     if (body != NULL) {
         free(body->line);
-        free(body->suggestion);
+        free(body->note);
         free(body->token);
         free(body);
     }
 }
 
+Footer* masm_diagnostics_init_footer(char* suggestion, FooterType type) {
+    Footer* footer = xmalloc(sizeof(*footer));
+    footer->suggestion = strdup(suggestion);
+    footer->type = type;
+
+    return footer;
+}
+
+void masm_diagnostics_free_footer(Footer* footer) {
+    assert(footer);
+    free(footer->suggestion);
+    free(footer);
+}
 
 Message* masm_diagnostics_init_message(Header* header, Body* body, Footer* footer) {
     Message* message = xmalloc(sizeof(*message));
@@ -217,8 +226,8 @@ void masm_diagnostics_render_body(Message* message) {
 
     fprintf(stdout, "\t|\n\t\b\b%s%d%s | ", GOLDEN,  message->header->lineNum, RESET);
 
-    switch (body->formatType) {
-        case FORMAT_TYPE_UNDERCURL: {
+    switch (body->type) {
+        case BODY_TYPE_UNDERCURL: {
             while (*p && ret) {
                 if (p < ret || p > ret) {
                     fprintf(stdout, "%c", *p);
@@ -238,18 +247,30 @@ void masm_diagnostics_render_body(Message* message) {
             break;
     }
 
-    if (body->suggestion) {
+    if (body->note) {
         fprintf(stdout, "\t| ");
         for (int i = 0; i < position; i++) {
             putc(' ', stdout);
         }
-        fprintf(stdout, "%s^-----%s%s\n", GREEN, body->suggestion, RESET);
+        fprintf(stdout, "%s^-----%s%s\n", GREEN, body->note, RESET);
+    }
+}
+
+void masm_diagnostics_render_footer(Footer* footer) {
+    if (!footer) {return;}
+    switch (footer->type) {
+        case FOOTER_TYPE_HELP: {
+            fprintf(stdout, "%s%sHELP:%s %s\n", BOLD, BLUE, RESET, footer->suggestion);
+        }
+        break;
+    
     }
 }
 
 void masm_diagnostics_render_message(Message* message) {
     masm_diagnostics_render_header(message->header);
     masm_diagnostics_render_body(message);
+    masm_diagnostics_render_footer(message->footer);
 }
 
 void masm_diagnostics_print_messages(void) {

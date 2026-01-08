@@ -17,8 +17,12 @@ typedef enum {
 } ErrorType;
 
 typedef enum {
-    FORMAT_TYPE_UNDERCURL,
-} FormatType;
+    BODY_TYPE_UNDERCURL,
+} BodyType;
+
+typedef enum {
+    FOOTER_TYPE_HELP, 
+} FooterType; 
 
 
 // global diagnostics 
@@ -29,9 +33,13 @@ Header* masm_diagnostics_init_header(int lineNum, int cursorNum, char* source, c
 
 void masm_diagnostics_free_header(Header* header);
 
-Body* masm_diagnostics_init_body(char* line, char* suggestion, char* token, FormatType formatType);
+Body* masm_diagnostics_init_body(char* line, char* suggestion, char* token, BodyType formatType);
 
 void masm_diagnostics_free_body(Body* body);
+
+Footer* masm_diagnostics_init_footer(char* suggestion, FooterType type);
+
+void masm_diagnostics_free_footer(Footer* footer);
 
 Message* masm_diagnostics_init_message(Header* header, Body* body, Footer* footer);
 
@@ -42,6 +50,8 @@ void masm_diagnostics_append_message(Message* message);
 void masm_diagnostics_render_header(Header* header);
 
 void masm_diagnostics_render_body(Message* message);
+
+void masm_diagnostics_render_footer(Footer* footer);
 
 void masm_diagnostics_render_message(Message* message);
 
