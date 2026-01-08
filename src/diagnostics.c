@@ -1,12 +1,15 @@
 #include "diagnostics.h"
 
 #include <assert.h>
-#include <complex.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 
+#ifdef DEBUG_LOGGING
+#include "log.h"
+#endif
 
 #include "svec.h"
 
@@ -71,7 +74,7 @@ static char* _get_error_type(ErrorType type) {
     case ERROR_TYPE_ERROR:
             return "ERROR";
         break;
-    case ERRORTYPE_FATAL:
+    case ERROR_TYPE_FATAL:
             return "FATAL ERROR";
       break;
     default:
@@ -87,7 +90,7 @@ static const char* _get_error_color(ErrorType type) {
     case ERROR_TYPE_ERROR:
             return RED;
         break;
-    case ERRORTYPE_FATAL:
+    case ERROR_TYPE_FATAL:
             return RED;
       break;
     default:
@@ -95,14 +98,28 @@ static const char* _get_error_color(ErrorType type) {
     }
 }
 
-Header* masm_diagnostics_init_header(int lineNum, int cursorNum, char* source, char* text, bool internal, ErrorType type) {
+Header* masm_diagnostics_init_header(int lineNum, int cursorNum, char* source, bool internal, ErrorType type, const char* text, ...) {
     assert(source != NULL && text != NULL);
+    // Truncates messages longer
+    char buffer[100];
+     
+    va_list list;
+    va_start(list, text);
+    
+    size_t len = vsnprintf(buffer, sizeof(buffer), text, list);
+    va_end(list);
+
+    #ifdef DEBUG_LOGGING
+    if (len > sizeof(buffer)) {
+        log_error("Message text was truncated or errored");
+    }
+    #endif
 
     Header* header = xmalloc(sizeof(*header));
     header->lineNum = lineNum;
     header->cursorNum = cursorNum;
     header->source = strdup(source);
-    header->text = strdup(text);
+    header->text = strdup(buffer);
     header->internal = internal;
     header->type = type;
 
@@ -187,7 +204,7 @@ void masm_diagnostics_append_message(Message* message) {
         diag.tail = message;
     }
 
-    if (type == ERRORTYPE_FATAL) {
+    if (type == ERROR_TYPE_FATAL) {
         diag.panic = true;
         diag.canEmit = false;
     }
@@ -224,7 +241,7 @@ void masm_diagnostics_render_body(Message* message) {
     char* ret = strstr(body->line, body->token);
     int position = ret - p;
 
-    fprintf(stdout, "\t|\n\t\b\b%s%d%s | ", GOLDEN,  message->header->lineNum, RESET);
+    fprintf(stdout, "\t|\n\t\b\b%s%d%s | ", GOLDEN,  header->lineNum, RESET);
 
     switch (body->type) {
         case BODY_TYPE_UNDERCURL: {
@@ -235,7 +252,7 @@ void masm_diagnostics_render_body(Message* message) {
                 }
                 else if (p == ret) {
                     fprintf(stdout, "%s", UNDERLINE);
-                    for (int i = 0; i < strlen(body->token); i++) {
+                    for (size_t i = 0; i < (size_t) strlen(body->token); i++) {
                         fprintf(stdout, "%c", *p);
                         p++;
                     }
@@ -260,7 +277,7 @@ void masm_diagnostics_render_footer(Footer* footer) {
     if (!footer) {return;}
     switch (footer->type) {
         case FOOTER_TYPE_HELP: {
-            fprintf(stdout, "%s%sHELP:%s %s\n", BOLD, BLUE, RESET, footer->suggestion);
+            fprintf(stdout, "%s%sHELP:%s %s%s%s\n", BOLD, BLUE, RESET, ITALIC, footer->suggestion, RESET);
         }
         break;
     

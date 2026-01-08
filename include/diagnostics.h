@@ -13,7 +13,7 @@ typedef struct diagnostics Diagnostics;
 typedef enum {
     ERROR_TYPE_WARNING = 0,
     ERROR_TYPE_ERROR,
-    ERRORTYPE_FATAL,
+    ERROR_TYPE_FATAL,
 } ErrorType;
 
 typedef enum {
@@ -29,7 +29,7 @@ typedef enum {
 extern Diagnostics diag;
 
     
-Header* masm_diagnostics_init_header(int lineNum, int cursorNum, char* source, char* text, bool internal, ErrorType type);
+Header* masm_diagnostics_init_header(int lineNum, int cursorNum, char* source, bool internal, ErrorType type, const char* text, ...);
 
 void masm_diagnostics_free_header(Header* header);
 
