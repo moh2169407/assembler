@@ -15,7 +15,7 @@
 static char* _hex_to_cint(char** current, Token* token);
 
 
-
+// TODO
 static char* _bin_to_cint(char** current, Token* token);
 
 
@@ -144,20 +144,21 @@ bool masm_lexer_slice_line(char* line, TokenMatrix* matrix) {
     while (*current) {
         // checks to see if there's consecutively whitespaces
         // and tabs to skips over
-        if (_is_extra_whitespace_tab(current, previous) ){
+        if (_is_extra_whitespace_tab(current, previous)) {
             previous = current;
             current++;
             pos++;
             continue;
         }
         // ';' are comments
-        if (*current == ';' || *current == '\n') {
+        if (*current == ';') {
             break;
         }
 
         Token tok;
         tok.lineNum = matrix->size + 1;
-
+        // TODO Use an array of function pointers
+        //
         if (!masm_lexer_is_directive(&current, &tok) &&
             !masm_lexer_is_identifier(&current, &tok) && 
             !masm_lexer_is_register(&current, &tok) && 
@@ -262,7 +263,6 @@ void masm_lexer_matrix_print_formatted_tokens(TokenMatrix* matrix) {
         }
     } 
 }
-
 
 bool masm_lexer_is_identifier(char** current, Token* token) {
     char* p = *current;

@@ -138,5 +138,7 @@ bool masm_lexer_is_comma(char** current, Token* token);
 
 bool masm_lexer_is_string_literal(char** current, Token* token);
 
+char* _token_type_to_string(TokenType type);
+
 
 #endif

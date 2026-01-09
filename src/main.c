@@ -6,15 +6,18 @@
 #include "diagnostics.h"
 #include "svec.h"
 #include "main.h"
+#include "io.h"
 
 // Private Functions
+//
+
+static bool _exit_after_phase();
 
 static void _print_help_messages() {
     for (int i = 0; i <  HELP_MESSAGE_SIZE; i++) {
         printf("%s", help_message[i]);
     }
 }
-
 
 static int _parse_arugments(int args, char** argv, Mparam* param) {
     // If not arguments are passed
@@ -92,6 +95,11 @@ Mparam _init_mparam(void) {
     };  
 }
 
+void _stdout_error(){
+    masm_diagnostics_print_messages();
+    masm_diagnostics_free_diagnostic();
+}
+
 void _free_mparam(Mparam* param) {
     assert(param);
     free(param->inFileNames);
@@ -102,15 +110,23 @@ void _free_mparam(Mparam* param) {
 int main (int args, char** argv) {
     Mparam param = _init_mparam();
 
-    if (_parse_arugments(args, argv, &param)) {
-        masm_diagnostics_print_messages();
-        masm_diagnostics_free_diagnostic();
+    _parse_arugments(args, argv, &param);
+
+    if (_exit_after_phase()) {
+        _stdout_error();
         _free_mparam(&param);
         return ERROR;
     }
 
 
+    
+
 
 
     
 }
+
+static bool _exit_after_phase() {
+    return !masm_diagnostics_can_emit();
+}
+
